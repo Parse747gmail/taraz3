@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<title>تراز | مدیریت دارایی</title>
+<style>
+#lockScreen{position:fixed;inset:0;z-index:9999;background:#f4f7f8;display:none;align-items:center;justify-content:center;padding:22px}
+#lockScreen .lockcard{width:100%;max-width:380px;background:white;border:1px solid #e2eaea;border-radius:20px;padding:22px;text-align:center;box-shadow:0 10px 40px #143b3b12}
+#lockScreen input{text-align:center;letter-spacing:8px;font-size:22px;margin:12px 0}
+:root{--bg:#f4f7f8;--card:#fff;--ink:#152a2a;--muted:#687b7b;--teal:#0f766e;--line:#e2eaea;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,sans-serif;line-height:1.7}
+header{background:linear-gradient(135deg,#115e59,#0f766e);color:#fff;padding:22px 16px 26px;border-radius:0 0 24px 24px}
+.wrap{max-width:760px;margin:auto;padding:0 14px}header .wrap{padding:0 4px}h1{margin:0;font-size:26px}header p{margin:4px 0 0;opacity:.9;font-size:13px}
+main{padding:16px 0 36px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px #143b3b08}
+h2{font-size:17px;margin:0 0 12px}.hero{background:#e0f2ef;border:0}.total-label{font-size:13px;color:#315e5a}.total{font-size:27px;font-weight:800;color:#075e56;margin:2px 0 8px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{padding:11px;background:#ffffffb8;border-radius:12px}.stat small{display:block;color:var(--muted)}.stat strong{font-size:14px}
+label{display:block;font-size:13px;margin:8px 0 4px;color:#395252}input,select{font:inherit;width:100%;border:1px solid #cbd8d8;border-radius:10px;padding:10px;background:#fff;color:var(--ink);min-width:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}
+button{font:inherit;border:0;border-radius:11px;padding:11px 14px;cursor:pointer;font-weight:700}.primary{background:var(--teal);color:white;width:100%;margin-top:12px}.soft{background:#e5f3f1;color:#075e56}.danger{background:#fff0ef;color:var(--red);padding:7px 10px;font-size:12px}
+.note{font-size:12px;color:var(--muted);margin:7px 0 0}.rates{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ratebox{background:#f6faf9;border:1px solid var(--line);padding:10px;border-radius:12px}.ratebox label{margin-top:0}.ratebox input{background:white}
+.item{padding:12px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;justify-content:space-between;align-items:center}.item:last-child{border-bottom:0}.item-name{font-weight:700}.meta{font-size:12px;color:var(--muted)}.item-value{font-weight:800;white-space:nowrap}.item-side{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.barrow{display:grid;grid-template-columns:76px 1fr 100px;gap:8px;align-items:center;margin:10px 0;font-size:12px}.barbg{height:9px;background:#edf2f2;border-radius:10px;overflow:hidden}.bar{height:100%;background:var(--teal);border-radius:10px}
+.empty{text-align:center;color:var(--muted);padding:16px;font-size:13px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:4px 0 18px}
+@media(max-width:420px){.grid,.rates{grid-template-columns:1fr}.full{grid-column:auto}.barrow{grid-template-columns:64px 1fr 88px}.total{font-size:23px}}
+</style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./icon.svg"></head>
+<body>
+<header><div class="wrap"><h1>تراز</h1><p>نمای ساده و سریع از دارایی‌های شما</p></div></header>
+<div id="lockScreen"><div class="lockcard"><h2>تراز قفل است</h2><p class="note">برای ورود، رمز برنامه را وارد کن.</p><input id="pinEntry" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off"><button class="primary" id="unlockBtn">باز کردن</button><p class="note" id="lockError"></p></div></div>
+<main class="wrap">
+<section class="card hero">
+<div class="total-label">مجموع ارزش دارایی‌ها</div><div class="total" id="total">۰ تومان</div>
+<div class="stats">
+<div class="stat"><small>طلا</small><strong id="goldTotal">۰ تومان</strong></div>
+<div class="stat"><small>ارز</small><strong id="fxTotal">۰ تومان</strong></div>
+<div class="stat"><small>نقد و بانک</small><strong id="cashTotal">۰ تومان</strong></div>
+<div class="stat"><small>سایر دارایی‌ها</small><strong id="otherTotal">۰ تومان</strong></div>
+</div></section>
+<section class="card">
+<h2>۱. قیمت‌های مبنا</h2>
+<div class="rates">
+<div class="ratebox"><label for="goldRate">قیمت هر گرم طلا (تومان)</label><input id="goldRate" type="number" min="0" inputmode="decimal" placeholder="مثلاً ۷۵۰۰۰۰۰"></div>
+<div class="ratebox"><label for="usdRate">قیمت هر دلار آزاد (تومان)</label><input id="usdRate" type="number" min="0" inputmode="decimal" placeholder="مثلاً ۱۰۰۰۰۰"></div>
+<div class="ratebox"><label for="eurRate">قیمت هر یورو (تومان)</label><input id="eurRate" type="number" min="0" inputmode="decimal" placeholder="قیمت یورو"></div>
+<div class="ratebox"><label for="coinRate">قیمت هر سکه امامی (تومان)</label><input id="coinRate" type="number" min="0" inputmode="decimal" placeholder="قیمت سکه"></div>
+</div>
+<p class="note">قیمت‌ها را از منبع مورد اعتماد خود وارد یا به‌روزرسانی کنید. این نسخه هنوز نرخ زنده اینترنتی دریافت نمی‌کند؛ ارزش دارایی‌ها با همین قیمت‌های واردشده محاسبه می‌شود.</p>
+<div class="grid" style="margin-top:10px">
+<button class="soft" id="refreshRates">دریافت نرخ آنلاین</button>
+<button class="soft" id="saveRates">ذخیره قیمت دستی</button>
+</div>
+<p class="note" id="rateStatus">نرخ آنلاین هنوز دریافت نشده است.</p>
+</section>
+<section class="card">
+<h2>۲. افزودن دارایی</h2>
+<div class="grid">
+<div class="full"><label for="name">نام دارایی</label><input id="name" placeholder="مثلاً طلای زینتی، دلار نقد، حساب بانک"></div>
+<div><label for="type">نوع دارایی</label><select id="type"><option value="cash">نقد و بانک</option><option value="gold">طلا</option><option value="fx">ارز</option><option value="coin">سکه</option><option value="other">سایر</option></select></div>
+<div><label for="mode">روش ارزش‌گذاری</label><select id="mode"><option value="total">مبلغ کل (تومان)</option><option value="quantity">تعداد × قیمت مبنا</option></select></div>
+<div id="qtyWrap"><label for="qty">مقدار</label><input id="qty" type="number" min="0" step="any" inputmode="decimal" placeholder="مثلاً ۲.۵"></div>
+<div id="unitWrap"><label for="unit">واحد مقدار</label><input id="unit" placeholder="گرم، دلار، یورو..."></div>
+<div class="full" id="valueWrap"><label for="value">ارزش کل (تومان)</label><input id="value" type="number" min="0" step="any" inputmode="decimal" placeholder="مثلاً ۲۵۰۰۰۰۰۰"></div>
+</div>
+<p class="note" id="calcHint">برای طلا، روش «تعداد × قیمت مبنا» قیمت هر گرم را اعمال می‌کند. برای ارز، قیمت واردشده در بخش قیمت‌های مبنا اعمال می‌شود.</p>
+<button class="primary" id="add">افزودن به دارایی‌ها</button>
+</section>
+<section class="card"><h2>۳. ترکیب دارایی‌ها</h2><div id="bars"></div></section>
+<section class="card"><h2>۴. تغییرات ارزش دارایی‌ها</h2><div id="historyChart"></div><p class="note">برای حفظ حریم خصوصی، تاریخچه فقط روی همین مرورگر ذخیره می‌شود. نمودار از زمان فعال‌کردن این قابلیت به بعد شکل می‌گیرد و تاریخچه‌ی گذشته را بازسازی نمی‌کند.</p></section>
+<section class="card"><h2>۵. امنیت و تنظیمات</h2>
+<p class="note">این قفل ساده فقط دسترسی به صفحه را در همین مرورگر محدود می‌کند؛ رمزگذاری واقعی فایل‌ها یا امنیت در سطح سیستم‌عامل نیست. برای محافظت قوی‌تر باید نسخه اندرویدی با قفل امن سیستم‌عامل ساخته شود.</p>
+<div class="grid"><div><label for="newPin">رمز جدید ۴ تا ۶ رقمی</label><input id="newPin" type="password" inputmode="numeric" maxlength="6" placeholder="رمز جدید"></div><div><label for="confirmPin">تکرار رمز</label><input id="confirmPin" type="password" inputmode="numeric" maxlength="6" placeholder="تکرار رمز"></div></div>
+<div class="grid"><button class="soft" id="setPin">فعال‌کردن / تغییر رمز</button><button class="soft" id="removePin">برداشتن رمز</button></div>
+<p class="note" id="pinStatus"></p></section>
+<section class="card"><h2>۶. فهرست دارایی‌ها</h2><div id="items"></div><div class="grid" style="margin-top:10px"><button class="soft" id="export">پشتیبان‌گیری</button><button class="soft" id="importBtn">بازیابی پشتیبان</button><input id="file" type="file" accept="application/json" hidden></div><p class="note">پشتیبان‌گیری یک فایل JSON از اطلاعات شما می‌سازد. بهتر است هر از گاهی آن را ذخیره کنید.</p></section>
+<footer>تراز — نسخه آزمایشی آفلاین | اطلاعات در همین مرورگر نگهداری می‌شود.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(Number(n)||0)+' تومان';
+const num=n=>Number(n)||0;
+let assets=[];let rates={gold:0,usd:0,eur:0,coin:0};let history=[];
+try{assets=JSON.parse(localStorage.getItem('taraz_assets_v2')||'[]');rates={...rates,...JSON.parse(localStorage.getItem('taraz_rates_v2')||'{}')};history=JSON.parse(localStorage.getItem('taraz_history_v1')||'[]')}catch(e){}
+$('goldRate').value=rates.gold||'';$('usdRate').value=rates.usd||'';$('eurRate').value=rates.eur||'';$('coinRate').value=rates.coin||'';
+function persist(){localStorage.setItem('taraz_assets_v2',JSON.stringify(assets));localStorage.setItem('taraz_rates_v2',JSON.stringify(rates));render()}
+function valueOf(a){if(a.mode==='quantity'){let rate=a.type==='gold'?rates.gold:a.type==='fx'?(a.unit==='یورو'?rates.eur:rates.usd):a.type==='coin'?rates.coin:0;return num(a.qty)*num(rate)}return num(a.value)}
+function recordHistory(){const total=assets.reduce((sum,a)=>sum+valueOf(a),0);const day=new Date().toISOString().slice(0,10);const last=history[history.length-1];if(last&&last.day===day){last.total=total;last.updatedAt=new Date().toISOString()}else{history.push({day,total,updatedAt:new Date().toISOString()})}history=history.slice(-90);localStorage.setItem('taraz_history_v1',JSON.stringify(history))}
+
+function render(){
+ const sums={gold:0,fx:0,cash:0,coin:0,other:0};assets.forEach(a=>sums[a.type]=(sums[a.type]||0)+valueOf(a));
+ const total=Object.values(sums).reduce((x,y)=>x+y,0);
+ $('total').textContent=fmt(total);$('goldTotal').textContent=fmt(sums.gold);$('fxTotal').textContent=fmt(sums.fx);$('cashTotal').textContent=fmt(sums.cash);$('otherTotal').textContent=fmt(sums.other);
+ const cats=[['gold','طلا'],['fx','ارز'],['cash','نقد و بانک'],['coin','سکه'],['other','سایر']];
+ $('bars').innerHTML=total?cats.map(([k,label])=>`<div class="barrow"><span>${label}</span><div class="barbg"><div class="bar" style="width:${Math.min(100,(sums[k]/total)*100)}%"></div></div><strong>${fmt(sums[k])}</strong></div>`).join(''):'<div class="empty">برای نمایش نمودار، ابتدا دارایی اضافه کنید.</div>';
+ const hist=$('historyChart');if(hist){if(history.length<2){hist.innerHTML='<div class="empty">بعد از ثبت تغییرات در روزهای مختلف، نمودار اینجا نمایش داده می‌شود.</div>'}else{let max=Math.max(...history.map(x=>x.total),1),min=Math.min(...history.map(x=>x.total));let pts=history.map((x,i)=>`${history.length===1?0:i*100/(history.length-1)},${90-(x.total-min)/(Math.max(max-min,1))*70}`).join(' ');hist.innerHTML=`<svg viewBox="0 0 100 100" role="img" aria-label="نمودار تغییرات ارزش دارایی‌ها" style="width:100%;height:150px"><polyline points="${pts}" fill="none" stroke="#0f766e" stroke-width="2" vector-effect="non-scaling-stroke"/><line x1="0" y1="90" x2="100" y2="90" stroke="#d7e3e3" stroke-width=".6"/></svg><div class="meta">اولین ثبت: ${esc(history[0].day)} · آخرین ثبت: ${esc(history[history.length-1].day)}</div><strong>${fmt(history[history.length-1].total)}</strong>`}} 
+ $('items').innerHTML=assets.length?assets.map((a,i)=>`<div class="item"><div><div class="item-name">${esc(a.name)}</div><div class="meta">${({cash:'نقد و بانک',gold:'طلا',fx:'ارز',coin:'سکه',other:'سایر'})[a.type]}${a.mode==='quantity'?' · '+new Intl.NumberFormat('fa-IR',{maximumFractionDigits:3}).format(a.qty)+' '+esc(a.unit||'واحد'):''}</div></div><div class="item-side"><div class="item-value">${fmt(valueOf(a))}</div><button class="danger" onclick="removeAsset(${i})">حذف</button></div></div>`).join(''):'<div class="empty">هنوز دارایی‌ای ثبت نشده است.</div>';
+}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+window.removeAsset=i=>{if(confirm('این دارایی حذف شود؟')){assets.splice(i,1);persist();recordHistory();render()}};
+function updateMode(){let q=$('mode').value==='quantity';$('qtyWrap').style.display=q?'block':'none';$('unitWrap').style.display=q?'block':'none';$('valueWrap').style.display=q?'none':'block';let t=$('type').value;if(q&&t==='cash')$('unit').placeholder='مثلاً حساب / واحد';if(q&&t==='fx')$('unit').placeholder='دلار یا یورو';if(q&&t==='coin')$('unit').placeholder='عدد سکه';$('calcHint').textContent=q?(t==='gold'?'ارزش = مقدار گرم × قیمت هر گرم طلا':t==='fx'?'واحد مقدار را دقیقاً «یورو» وارد کن تا نرخ یورو اعمال شود؛ در غیر این صورت دلار حساب می‌شود.':t==='coin'?'ارزش = تعداد سکه × قیمت سکه امامی':'برای نقد و بانک بهتر است مبلغ کل را وارد کنید؛ قیمت مبنا برای این نوع تعریف نشده است.'):'مبلغ نهایی دارایی را به تومان وارد کنید.'}
+$('type').addEventListener('change',updateMode);$('mode').addEventListener('change',updateMode);updateMode();
+$('saveRates').onclick=()=>{rates={gold:num($('goldRate').value),usd:num($('usdRate').value)};persist();$('rateStatus').textContent='قیمت‌های واردشده ذخیره شد؛ آخرین دریافت آنلاین ممکن است قدیمی باشد.';alert('قیمت‌های مبنا ذخیره شد.')};
+
+$('refreshRates').onclick=async()=>{
+ const btn=$('refreshRates'),status=$('rateStatus');
+ btn.disabled=true;btn.textContent='در حال دریافت...';status.textContent='در حال اتصال به منبع نرخ بازار...';
+ try{
+   const url='https://raw.githubusercontent.com/iran-market/iran-market.github.io/main/data/popular.json';
+   const res=await fetch(url,{cache:'no-store'});
+   if(!res.ok)throw new Error('HTTP '+res.status);
+   const payload=await res.json();
+   const data=Array.isArray(payload.data)?payload.data:[];
+   const usd=data.find(x=>x.symbol==='USD_IRR_FREE');
+   const gold=data.find(x=>x.symbol==='GOLD_18K_IRR');
+   if(!usd||!gold||!Number(usd.price)||!Number(gold.price))throw new Error('قیمت‌ها در پاسخ پیدا نشدند');
+   rates={...rates,gold:Number(gold.price),usd:Number(usd.price)};
+   $('goldRate').value=rates.gold;$('usdRate').value=rates.usd;
+   localStorage.setItem('taraz_rates_v2',JSON.stringify(rates));
+   recordHistory();render();
+   const when=payload.updated_at||payload.updatedAt||payload.generated_at||'زمان دقیق در پاسخ مشخص نیست';
+   status.textContent='نرخ‌ها دریافت شد. دلار آزاد: '+fmt(rates.usd)+'؛ هر گرم طلای ۱۸ عیار: '+fmt(rates.gold)+'. '+(typeof when==='string'&&when.includes('T')?'زمان منبع: '+new Date(when).toLocaleString('fa-IR')+'.':when);
+ }catch(err){
+   status.textContent='دریافت نرخ آنلاین ناموفق بود. اتصال اینترنت یا محدودیت مرورگر را بررسی کن؛ می‌توانی قیمت را دستی وارد کنی.';
+ }finally{btn.disabled=false;btn.textContent='دریافت دوباره نرخ آنلاین'}
+};
+$('add').onclick=()=>{let name=$('name').value.trim(),type=$('type').value,mode=$('mode').value;if(!name){alert('نام دارایی را وارد کنید.');return}
+let a={name,type,mode,qty:num($('qty').value),unit:$('unit').value.trim(),value:num($('value').value)};
+if(mode==='quantity'&&!['gold','fx'].includes(type)){alert('برای این نوع دارایی، روش مبلغ کل را انتخاب کنید.');return}
+if(mode==='quantity'&&a.qty<=0){alert('مقدار باید بیشتر از صفر باشد.');return}
+if(mode==='total'&&a.value<=0){alert('ارزش کل باید بیشتر از صفر باشد.');return}
+if(mode==='quantity'&&!(type==='gold'?rates.gold:rates.usd)){alert('ابتدا قیمت مبنا را در بخش بالا وارد و ذخیره کنید.');return}
+assets.push(a);persist();recordHistory();render();$('name').value='';$('qty').value='';$('value').value='';$('unit').value='';alert('دارایی اضافه شد.')};
+$('export').onclick=()=>{let blob=new Blob([JSON.stringify({version:3,assets,rates,history,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='taraz-backup.json';a.click();URL.revokeObjectURL(a.href)};
+$('importBtn').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!Array.isArray(d.assets))throw Error();if(!confirm('اطلاعات فعلی با پشتیبان جایگزین شود؟'))return;assets=d.assets;rates={...rates,...(d.rates||{})};history=Array.isArray(d.history)?d.history:history;$('goldRate').value=rates.gold||'';$('usdRate').value=rates.usd||'';$('eurRate').value=rates.eur||'';$('coinRate').value=rates.coin||'';persist();localStorage.setItem('taraz_history_v1',JSON.stringify(history));alert('پشتیبان بازیابی شد.')}catch(err){alert('فایل پشتیبان معتبر نیست.')}e.target.value=''};
+recordHistory();// قفل صفحه با PIN ساده؛ جایگزین قفل امن اندروید نیست.
+const PIN_KEY='taraz_pin_v1';
+function lockIfSet(){if(localStorage.getItem(PIN_KEY)){ $('lockScreen').style.display='flex';$('pinEntry').value='';$('lockError').textContent='';}}
+$('setPin').onclick=()=>{const a=$('newPin').value,b=$('confirmPin').value;if(!/^\\d{4,6}$/.test(a)){alert('رمز باید ۴ تا ۶ رقم باشد.');return}if(a!==b){alert('رمزها یکسان نیستند.');return}localStorage.setItem(PIN_KEY,a);$('newPin').value='';$('confirmPin').value='';$('pinStatus').textContent='رمز فعال شد. آن را فراموش نکن؛ بازیابی خودکار ندارد.';alert('رمز برنامه فعال شد.');};
+$('removePin').onclick=()=>{if(!localStorage.getItem(PIN_KEY)){alert('رمزی تنظیم نشده است.');return}if(prompt('برای برداشتن رمز، رمز فعلی را وارد کن:')===localStorage.getItem(PIN_KEY)){localStorage.removeItem(PIN_KEY);$('pinStatus').textContent='رمز برداشته شد.'}else alert('رمز فعلی درست نیست.')};
+$('unlockBtn').onclick=()=>{if($('pinEntry').value===localStorage.getItem(PIN_KEY)){$('lockScreen').style.display='none';$('lockError').textContent=''}else $('lockError').textContent='رمز نادرست است.'};
+$('pinEntry').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockBtn').click()});
+lockIfSet();render();
+</script><script>if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});</script></body></html>
